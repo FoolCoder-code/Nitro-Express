@@ -1,0 +1,29 @@
+{
+    "settingsMenu": {
+        "language": "語言",
+        "sfx": "音效音量",
+        "bgm": "背景音樂音量",
+        "resolution": "解析度",
+        "max_refresh_rate": "最高刷新率",
+        "text_display_speed": "文本顯示速度",
+        "autoplay_mode_speed": "自動播放速度",
+        "skip_read_scenes": "跳過已讀場景",
+        "on": "Yes",
+        "off": "No",
+        "return": "返回遊戲"
+    },
+
+    "titlescreen": {
+        "title": "Nitro Express",
+        "button_start": "開始遊戲",
+        "button_settings": "設定",
+        "button_exit": "離開"
+    },
+
+    "saveSelector": {
+        "title": "選擇存檔",
+        "slot_label": "存檔 {slot}",
+        "day_label": "第 {day} 天",
+        "action_hint": "點擊以載入"
+    }
+}

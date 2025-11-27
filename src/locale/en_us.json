@@ -1,0 +1,29 @@
+{
+    "settingsMenu": {
+        "language": "Language",
+        "sfx": "Audio Volume",
+        "bgm": "Music Volume",
+        "resolution": "Resolution",
+        "max_refresh_rate": "Maximum Refresh Rate",
+        "text_display_speed": "Text Display Speed",
+        "autoplay_mode_speed": "Autoplay Mode Speed",
+        "skip_read_scenes": "Skip Read Scenes",
+        "on": "Yes",
+        "off": "No",
+        "return": "Return to Game"
+    },
+
+    "titlescreen": {
+        "title": "Nitro Express",
+        "button_start": "Start",
+        "button_settings": "Settings",
+        "button_exit": "Exit"
+    },
+
+    "saveSelector": {
+        "title": "Select a Save",
+        "slot_label": "Save {slot}",
+        "day_label": "Day {day}",
+        "action_hint": "Click to load"
+    }
+}
