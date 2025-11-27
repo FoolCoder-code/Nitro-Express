@@ -7,6 +7,7 @@ from core.scene.EventState import EventState
 from core.scene.SceneManager import SceneManager
 from core.scene.Scene import Scene
 from core.ui.components.AnimatedSlidingButton import AnimatedSlidingButton
+from core.scene.SettingsScreen import SettingsScreen
 
 
 class Titlescreen(Scene):
@@ -50,7 +51,7 @@ class Titlescreen(Scene):
                 case "game":
                     pass
                 case "settings":
-                    pass
+                    self.sm.stack_push(SettingsScreen(self.sm))
                 case "exit":
                     pygame.event.post(pygame.event.Event(pygame.QUIT))
             break

@@ -3,6 +3,7 @@ import pygame
 
 from core.config_manager import get_config_parser, WINDOW_TITLE
 from core.scene.SceneManager import SceneManager
+from core.scene.Titlescreen import Titlescreen
 
 
 def main() -> None:
@@ -22,6 +23,7 @@ def main() -> None:
     clock = pygame.time.Clock()
 
     scene_manager = SceneManager(window)
+    scene_manager.stack_push(Titlescreen(scene_manager))
 
     # Main Loop
     while True:
