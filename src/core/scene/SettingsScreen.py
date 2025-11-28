@@ -161,7 +161,7 @@ class SettingsScreen(Scene):
         self.return_button = AnimatedGlowingButton(
             self.sm.language_data.get_str("settingsMenu", "return"),
             "return",
-            (self.rscale(self.sm.screen.size[0] / 2), self.rscale(start_y + gap_y * (1 + len(self._SETTINGS_KEYS)))),
+            (self.sm.screen.size[0] // 2, start_y + gap_y * (1 + len(self._SETTINGS_KEYS))),
             font
         )
 
