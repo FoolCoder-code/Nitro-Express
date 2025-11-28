@@ -8,10 +8,12 @@ from core.scene.SceneManager import SceneManager
 from core.scene.Scene import Scene
 from core.ui.components.AnimatedSlidingButton import AnimatedSlidingButton
 from core.scene.SettingsScreen import SettingsScreen
+from core.scene.SaveSelector import SaveSelector
 
 
 class Titlescreen(Scene):
-    def __init__(self,
+    def __init__(
+            self,
             scene_manager: SceneManager,
             button_hover_offset: tuple[int, int] = (30, -5),
             button_hover_animation_speed: float = 10.0
@@ -49,7 +51,7 @@ class Titlescreen(Scene):
             print(f"Selected action: {button.action}")
             match button.action:
                 case "game":
-                    pass
+                    self.sm.stack_push(SaveSelector(self.sm))
                 case "settings":
                     self.sm.stack_push(SettingsScreen(self.sm))
                 case "exit":

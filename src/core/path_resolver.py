@@ -51,6 +51,13 @@ def locale_root() -> Path:
 def locale_dir(*sub) -> Path:
     return locale_root().joinpath(*sub)
 
+@lru_cache(maxsize=1)
+def userdata_root() -> Path:
+    return src_root() / "userdata"
+
+def userdata_dir(*sub) -> Path:
+    return userdata_root().joinpath(*sub)
+
 def ensure_dir(path) -> Path:
     if path.suffix:
         path.parent.mkdir(parents=True, exist_ok=True)
