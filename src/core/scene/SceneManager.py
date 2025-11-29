@@ -1,7 +1,10 @@
 import pygame
+import io
+import json
 
 from typing import Optional
 
+from core.asset_manager import AssetPak, read_illustration_pak, read_sprite_pak, read_scene_pak, unpack_encoded_string
 from core.config_manager import DEFAULT_LANGUAGE_CODE, get_config_parser
 from core.locale.pak_loader import LangData
 from core.scene.Scene import Scene
@@ -9,9 +12,20 @@ from core.scene.EventState import EventState
 
 
 class SceneManager:
-    def __init__(self, screen: pygame.Surface) -> None:
+    def __init__(
+            self,
+            screen: pygame.Surface,
+            asset_illustrations: AssetPak | None = None,
+            asset_sprites: AssetPak | None = None,
+            asset_scenes: AssetPak | None = None
+        ) -> None:
         self.scene_stack: list[Scene] = []
         self.screen = screen
+
+        self.asset_illustrations = asset_illustrations if asset_illustrations else read_illustration_pak()
+        self.asset_sprites = asset_sprites if asset_sprites else read_sprite_pak()
+        self.asset_scenes = asset_scenes if asset_scenes else read_scene_pak()
+
         self.events = EventState()
         self._pending_switch: Optional[Scene] = None
         self.reloading_language_data: bool = False
@@ -25,6 +39,12 @@ class SceneManager:
         # Scale based on 1920x1080
         # All the supported resolutions are 16:9 so only calculates once
         return self.screen.size[0] / 1920
+
+    def get_illustration_iofile(self, filename_no_ext: str) -> io.BytesIO:
+        return io.BytesIO(unpack_encoded_string(self.asset_illustrations["entries"][filename_no_ext]["encoded_string"]))
+
+    def get_sprite_iofile(self, filename_no_ext: str) -> io.BytesIO:
+        return io.BytesIO(unpack_encoded_string(self.asset_sprites["entries"][filename_no_ext]["encoded_string"]))
 
     def reload_language_data(self) -> None:
         """

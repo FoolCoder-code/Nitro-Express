@@ -21,9 +21,15 @@
     },
 
     "saveSelector": {
-        "title": "Select a Save",
         "slot_label": "Save {slot}",
         "day_label": "Day {day}",
-        "action_hint": "Click to load"
+        "new_game_hint": "New Game",
+        "load_game_hint": "Load",
+        "overwrite_game_hint": "Overwrite",
+        "remove_game_hint": "Remove",
+        "toggle_load": "Load Mode",
+        "toggle_overwrite": "Overwrite Mode",
+        "toggle_remove": "Remove Mode",
+        "return": "Return to Game"
     }
 }

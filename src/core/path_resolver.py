@@ -31,6 +31,9 @@ def asset_illustration(*sub) -> Path:
 def asset_sprite(*sub) -> Path:
     return assets_root().joinpath("sprite", *sub)
 
+def asset_scene(*sub) -> Path:
+    return assets_root().joinpath("scene", *sub)
+
 @lru_cache(maxsize=1)
 def core_root() -> Path:
     return src_root() / "core"
@@ -50,6 +53,13 @@ def locale_root() -> Path:
 
 def locale_dir(*sub) -> Path:
     return locale_root().joinpath(*sub)
+
+@lru_cache(maxsize=1)
+def userdata_root() -> Path:
+    return src_root() / "userdata"
+
+def userdata_dir(*sub) -> Path:
+    return userdata_root().joinpath(*sub)
 
 def ensure_dir(path) -> Path:
     if path.suffix:

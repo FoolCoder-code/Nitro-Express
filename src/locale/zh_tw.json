@@ -21,9 +21,15 @@
     },
 
     "saveSelector": {
-        "title": "選擇存檔",
         "slot_label": "存檔 {slot}",
         "day_label": "第 {day} 天",
-        "action_hint": "點擊以載入"
+        "new_game_hint": "開始",
+        "load_game_hint": "讀取",
+        "overwrite_game_hint": "覆蓋",
+        "remove_game_hint": "刪除",
+        "toggle_load": "讀取模式",
+        "toggle_overwrite": "覆蓋模式",
+        "toggle_remove": "刪除模式",
+        "return": "返回遊戲"
     }
 }
