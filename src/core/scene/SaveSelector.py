@@ -84,6 +84,8 @@ class SaveSelector(Scene):
                     remove_save_file(entry.slot_index)
                 case "remove":
                     remove_save_file(entry.slot_index)
+            self._reload_save_slots()
+            return True
 
         # Toggle Mode
         if self.mode_button.is_hovered:
