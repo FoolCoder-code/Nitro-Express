@@ -2,7 +2,7 @@ import math
 import pygame
 import numpy as np
 
-from typing import Callable, Union
+from typing import Union
 from core.scene.EventState import EventState
 from core.scene.SceneManager import SceneManager
 from core.scene.Scene import Scene
@@ -60,7 +60,7 @@ class PromptScene(Scene):
             + max(0, rows_estimate - 1) * self.row_gap
         )
         panel_h = max(base_panel_h, min_content_h)
-        panel_w = int(self.window_size[0] * 0.88)
+        panel_w = self.window_size[0]
         self.panel_size = (panel_w, panel_h)
 
         # Background

@@ -1,11 +1,12 @@
 import pygame
 
-from typing import Union
+from typing import Union, Type
 from core.scene.EventState import EventState
 from core.scene.SceneManager import SceneManager
 from core.scene.Scene import Scene
 from core.scene.DialogueLog import DialogueLog
 from core.scene.DialogueStructure import DialogueSceneData, DialogueActionData
+from core.scene.PromptScene import PromptScene
 from core.ui.components.AnimatedGlowingButton import AnimatedGlowingButton
 from core.ui.effects.CoordsAnimator import Linear, OutCubic, InCubic, OutBack, InBack, Elastic
 from core.ui.effects.ScreenShake import ScreenShake
@@ -47,6 +48,7 @@ class DialogueScene(Scene):
 
         self._hide_mode: bool = False
         self._skip_mode: bool = False
+        self._awaiting_overlays: list[Type[Scene]] = []
 
         # UI Elements
         self.tw = Typewriter("", self.config_cps_scale)
@@ -74,6 +76,7 @@ class DialogueScene(Scene):
         self._curr_action_idx = 0
         self._last_action_idx = -1
         self._continue_dialogue = False
+        self._awaiting_overlays = []
 
         self._execute_step(self._curr_step_idx)
 
@@ -197,6 +200,14 @@ class DialogueScene(Scene):
         # Buttons
         for button in self.buttons:
             button.update(dt, self.mouse_pos)
+
+        # Auto-advance once any awaited overlay scenes are dismissed
+        if self._awaiting_overlays:
+            awaited = tuple(self._awaiting_overlays)
+            overlay_open = any(isinstance(scene, awaited) for scene in self.sm.scene_stack)
+            if not overlay_open:
+                self._awaiting_overlays = []
+                self._continue_dialogue = True
 
         # Step
         self._advance_dialogue()
@@ -469,7 +480,7 @@ class DialogueScene(Scene):
     def _execute_action(self, action: DialogueActionData) -> None:
         args = action.get("args", {})
 
-        def show_text(action: DialogueActionData) -> None:
+        def show_text() -> None:
             speaker_name = args["speaker_name"]
             speaker_title = args["speaker_title"]
             full_text = args["text"]
@@ -479,18 +490,18 @@ class DialogueScene(Scene):
             self.tw.reset(full_text)  # type: ignore
             self.dialogue_history.append((speaker_name, full_text))  # type: ignore
 
-        def play_bgm(action: DialogueActionData) -> None:
+        def play_bgm() -> None:
             pass
 
-        def play_sfx(action: DialogueActionData) -> None:
+        def play_sfx() -> None:
             pass
 
-        def show_character(action: DialogueActionData) -> None:
+        def show_character() -> None:
             character_id = str(args["character_id"])
             pos = self._relative_scale_to_pos(float(args["x"]), float(args["y"]))  # type: ignore
             self.characters["pos"][character_id] = pos
 
-        def move_character(action: DialogueActionData) -> None:
+        def move_character() -> None:
             character_id = str(args["character_id"])
             from_pos = self._relative_scale_to_pos(float(args["from_x"]), float(args["from_y"]))  # type: ignore
             to_pos = self._relative_scale_to_pos(float(args["to_x"]), float(args["to_y"]))  # type: ignore
@@ -511,13 +522,13 @@ class DialogueScene(Scene):
                 case "elastic":
                     self.characters["animator"][character_id] = Elastic(from_pos, to_pos, duration)
 
-        def hide_character(action: DialogueActionData) -> None:
+        def hide_character() -> None:
             character_id = str(args["character_id"])
             self.characters["sprite"].pop(character_id)
             self.characters["pos"].pop(character_id)
             self.characters["animator"].pop(character_id)
 
-        def set_highlight(action: DialogueActionData) -> None:
+        def set_highlight() -> None:
             character_id = str(args["character_id"])
             dim_others = bool(args["dim_others"])
             if dim_others:
@@ -527,22 +538,56 @@ class DialogueScene(Scene):
             if character_id != "":
                 self.characters["is_highlighted"][character_id] = True
 
-        def screen_shake(action: DialogueActionData) -> None:
+        def screen_shake() -> None:
             duration = float(args["duration"]) # type: ignore
             intensity = float(args["intensity"]) # type: ignore
             freq = int(args["frequency"]) # type: ignore
             infinite = bool(args["infinite"])
             self.shake_controller.start(duration, intensity, freq, infinite)
 
-        def prompt(action: DialogueActionData) -> None:
+        def prompt() -> None:
+            flag_key = str(args["id"])
+            prompt_label = str(args["message"])
             options = list(args["options"]) # type: ignore
-            for option in options:
-                pass
 
+            option_labels = []
+            option_values = []
+            for option in options:
+                option_labels.append(option["message"])
+                option_values.append(option["flag_value"])
+
+            self.sm.stack_push(PromptScene(
+                self.sm,
+                prompt_label,
+                flag_key,
+                option_labels,
+                option_values,
+                "title_background"
+            ))
+            # Register overlays that should resume flow when dismissed (extendable list)
+            self._awaiting_overlays = [PromptScene]
+
+        def change_dialogue_scene() -> None:
+            for package in args:
+
+                scene_id = str(package["scene_id"]) # type: ignore
+                required_g_flags = dict(package["required_g_flags"]) # type: ignore
+
+                # Check Flags
+                for k, v in required_g_flags.items():
+                    if self.sm.g_flags.get(k, "") != v:
+                        return
+
+                # Switch Scenes
+                self.sm.switch(DialogueScene(
+                    self.sm,
+                    self.sm.get_scene_data(scene_id)
+                ))
+                return
 
         match action.get("type"):
             case "show_text":
-                show_text(action)
+                show_text()
             case "set_background":
                 self._reload_background()  # Automatically apply last background with curr_step_idx
             case "play_bgm":
@@ -550,17 +595,19 @@ class DialogueScene(Scene):
             case "play_sfx":
                 pass
             case "show_character":
-                show_character(action)
+                show_character()
             case "move_character":
-                move_character(action)
+                move_character()
             case "hide_character":
-                hide_character(action)
+                hide_character()
             case "set_highlight":
-                set_highlight(action)
+                set_highlight()
             case "screen_shake":
-                screen_shake(action)
+                screen_shake()
             case "prompt":
-                prompt(action)
+                prompt()
+            case "change_dialogue_scene":
+                change_dialogue_scene()
 
     def _wrap_text(self, text: str, max_width: int) -> list[str]:
         if not text:
