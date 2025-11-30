@@ -31,6 +31,8 @@ class SceneManager:
         self._pending_switch: Optional[Scene] = None
         self.reloading_language_data: bool = False
 
+        self.g_flags: dict = {}
+
         # Loads configuration and .paks of languages
         self.config_parser = get_config_parser()
         self.reload_language_data()
@@ -108,11 +110,19 @@ class SceneManager:
         # Handle scenes and allow exclusive inputs for overlay
         # (Handle from last to first)
         for scene in reversed(self.scene_stack):
-            if scene.handle(self.events):
+            scene.handle(self.events)
+            if getattr(scene, "is_exclusive", False):
                 break
 
-        # Update from first to last
-        for scene in self.scene_stack:
+        # Update scenes from the highest scene with is_overlay == False to the top
+        update_start_idx = 0
+        for idx in range(len(self.scene_stack) - 1, -1, -1):
+            scene = self.scene_stack[idx]
+            if not getattr(scene, "is_overlay", False):
+                update_start_idx = idx
+                break
+
+        for scene in self.scene_stack[update_start_idx:]:
             scene.update(delta)
 
         # Draw from first to last

@@ -13,10 +13,19 @@ from core.ui.effects.Typewriter import Typewriter
 
 
 class DialogueScene(Scene):
-    def __init__(self, scene_manager: SceneManager, dialogue_data: DialogueSceneData, as_an_overlay: bool = False):
+    def __init__(
+            self,
+            scene_manager: SceneManager,
+            dialogue_data: DialogueSceneData,
+            *,
+            is_overlay: bool = False,
+            is_exclusive: bool = True
+        ):
         self.sm = scene_manager
+        self.is_overlay = is_overlay
+        self.is_exclusive = is_exclusive
+
         self.dialogue_data: DialogueSceneData = dialogue_data
-        self._as_an_overlay = as_an_overlay
 
         self.windows_size: tuple[int, int] = self.sm.screen.get_size()
         self.mouse_pos: tuple[int, int] = (0, 0)
@@ -71,7 +80,7 @@ class DialogueScene(Scene):
     def leave(self) -> None:
         return
 
-    def handle(self, ev: EventState) -> bool:
+    def handle(self, ev: EventState) -> None:
         def keyboard_event() -> bool:
             # Reset the guard once the advance keys are released so future presses work
             if pygame.K_SPACE in ev.key_up or pygame.K_RETURN in ev.key_up:
@@ -139,11 +148,8 @@ class DialogueScene(Scene):
         self.mouse_pos = ev.mouse_pos
 
         # Return when anyone is triggered
-        if keyboard_event():
-            return self.is_overlay
-        if mouse_event():
-            return self.is_overlay
-        return self.is_overlay
+        keyboard_event()
+        mouse_event()
 
     def update(self, dt: float) -> None:
         # Screen Shake Effect
@@ -276,10 +282,6 @@ class DialogueScene(Scene):
 
     def reload_language_data(self) -> None:
         self.reload_elements()
-
-    @property
-    def is_overlay(self) -> bool:
-        return self._as_an_overlay
 
     def reload_elements(self) -> None:
         # Fonts
@@ -532,10 +534,11 @@ class DialogueScene(Scene):
             infinite = bool(args["infinite"])
             self.shake_controller.start(duration, intensity, freq, infinite)
 
-        def prompt(action: DialogueActionData) -> str:
-            # TODO: Implement
-            options = args["options"]
-            return ""
+        def prompt(action: DialogueActionData) -> None:
+            options = list(args["options"]) # type: ignore
+            for option in options:
+                pass
+
 
         match action.get("type"):
             case "show_text":

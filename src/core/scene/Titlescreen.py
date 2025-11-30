@@ -16,9 +16,14 @@ class Titlescreen(Scene):
             self,
             scene_manager: SceneManager,
             button_hover_offset: tuple[int, int] = (30, -5),
-            button_hover_animation_speed: float = 10.0
+            button_hover_animation_speed: float = 10.0,
+            *,
+            is_overlay: bool = False,
+            is_exclusive: bool = True
         ):
         self.sm: SceneManager = scene_manager
+        self.is_overlay = is_overlay
+        self.is_exclusive = is_exclusive
 
         self.windows_size: tuple[int, int] = self.sm.screen.get_size()
         self.button_hover_offset: tuple[int, int] = (
@@ -36,13 +41,13 @@ class Titlescreen(Scene):
     def leave(self) -> None:
         return
 
-    def handle(self, ev: EventState) -> bool:
+    def handle(self, ev: EventState) -> None:
         # For detecting if mouse is hovering on buttons
         self.mouse_pos = ev.mouse_pos
 
         # LMB isn't clicked
         if 1 not in ev.mouse_down:
-            return False
+            return
 
         for button in self.buttons:
             if not button.is_hovered:
@@ -57,7 +62,6 @@ class Titlescreen(Scene):
                 case "exit":
                     pygame.event.post(pygame.event.Event(pygame.QUIT))
             break
-        return False
 
     def update(self, dt: float) -> None:
         for button in self.buttons:
@@ -79,10 +83,6 @@ class Titlescreen(Scene):
 
     def rscale(self, base_value: Union[int, float]) -> int:
         return round(base_value * self.sm.uniform_scale)
-
-    @property
-    def is_overlay(self) -> bool:
-        return False
 
     def reload_elements(self, language_data: LangData)-> None:
         # Fonts

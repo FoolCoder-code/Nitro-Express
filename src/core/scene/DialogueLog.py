@@ -14,8 +14,14 @@ class DialogueLog(Scene):
         lines: list[tuple[str, str]],
         text_color: tuple[int, int, int],
         font: pygame.font.Font,
+        *,
+        is_overlay: bool = True,
+        is_exclusive: bool = True
     ):
         self.sm = scene_manager
+        self.is_overlay = is_overlay
+        self.is_exclusive = is_exclusive
+
         self._lines = lines
         self._text_color = text_color
         self._font = font
@@ -36,13 +42,13 @@ class DialogueLog(Scene):
     def leave(self) -> None:
         return
 
-    def handle(self, ev: EventState) -> bool:
+    def handle(self, ev: EventState) -> None:
         self.mouse_pos = ev.mouse_pos
 
         # Close when clicked anywhere / escape is pressed.
         if 1 in ev.mouse_down or pygame.K_ESCAPE in ev.key_down:
             self.sm.stack_pop()
-            return True
+            return
 
         step = self.rscale(40)
         page = self._window_size[1] * 0.8
@@ -70,8 +76,6 @@ class DialogueLog(Scene):
             self._scroll = 0.0
         if pygame.K_END in ev.key_down:
             self._scroll = self._max_scroll
-
-        return True
 
     def update(self, dt: float) -> None:
         return
@@ -113,10 +117,6 @@ class DialogueLog(Scene):
 
     def reload_language_data(self) -> None:
         return
-
-    @property
-    def is_overlay(self) -> bool:
-        return True
 
     def _rebuild_render_cache(self) -> None:
         self._render_lines.clear()

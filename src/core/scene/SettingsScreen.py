@@ -42,8 +42,13 @@ class SettingsScreen(Scene):
     def __init__(
         self,
         scene_manager: SceneManager,
+        *,
+        is_overlay: bool = True,
+        is_exclusive: bool = True
     ):
         self.sm: SceneManager = scene_manager
+        self.is_overlay = is_overlay
+        self.is_exclusive = is_exclusive
         self.window_size: tuple[int, int] = self.sm.screen.get_size()
 
         self.mouse_pos: tuple[int, int] = (0, 0)
@@ -195,9 +200,7 @@ class SettingsScreen(Scene):
         write_config(self.sm.config_parser)
         self.sm.reload_language_data()
 
-        return
-
-    def handle(self, ev: EventState) -> bool:
+    def handle(self, ev: EventState) -> None:
         # Log mouse pos for button collision check
         self.mouse_pos = ev.mouse_pos
 
@@ -205,9 +208,6 @@ class SettingsScreen(Scene):
         if (pygame.K_ESCAPE in ev.key_down) or \
             (1 in ev.mouse_down and self.return_button.is_hovered):
             self.sm.stack_pop()
-
-        # Consume inputs
-        return True
 
     def update(self, dt: float) -> None:
         for entry in self.entries:
@@ -232,7 +232,3 @@ class SettingsScreen(Scene):
         # The config is saved after the scene gets dropped
         # Thus needless to reload
         return
-
-    @property
-    def is_overlay(self) -> bool:
-        return True

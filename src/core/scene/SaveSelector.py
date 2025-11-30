@@ -7,6 +7,7 @@ from core.path_resolver import ensure_dir, userdata_dir
 from core.scene.EventState import EventState
 from core.scene.SceneManager import SceneManager
 from core.scene.Scene import Scene
+from core.scene.DialogueScene import DialogueScene
 from core.ui.components.AnimatedGlowingButton import AnimatedGlowingButton
 from core.ui.components.SaveSlotEntry import SaveSlotEntry
 
@@ -15,8 +16,17 @@ class SaveSelector(Scene):
     """
     Simple save-selection scene that displays three placeholder slots.
     """
-    def __init__(self, scene_manager: SceneManager):
+    def __init__(
+            self,
+            scene_manager: SceneManager,
+            *,
+            is_overlay: bool = True,
+            is_exclusive: bool = True
+        ):
         self.sm = scene_manager
+        self.is_overlay = is_overlay
+        self.is_exclusive = is_exclusive
+
         self.window_size = self.sm.screen.size
 
         self.mouse_pos: tuple[int, int] = (0, 0)
@@ -59,24 +69,29 @@ class SaveSelector(Scene):
     def leave(self) -> None:
         return
 
-    def handle(self, ev: EventState) -> bool:
+    def handle(self, ev: EventState) -> None:
         self.mouse_pos = ev.mouse_pos
 
         # All the following events require LMB click
         if 1 not in ev.mouse_down:
-            return True
+            return
 
         # Slot Entry Buttons
         for entry in self.slot_entries:
             if not entry.action_button.is_hovered:
                 continue
             print(f"Slot: {entry.slot_index} | Action: {entry.action_button.action}")
+            from core.scene.PromptScene import PromptScene
             match entry.action_button.action:
                 case "new":
                     write_save_file(entry.slot_index, SaveDict(
                         Savetime = datetime.datetime.now(),
                         Day = 1,
                         Slot_msg = "Awaken" # TODO: Add localization support for slot_msg
+                    ))
+                    self.sm.switch(DialogueScene(
+                        self.sm,
+                        self.sm.get_scene_data("dialogue_example")
                     ))
                 case "load":
                     read_save_file(entry.slot_index)
@@ -85,7 +100,7 @@ class SaveSelector(Scene):
                 case "remove":
                     remove_save_file(entry.slot_index)
             self._reload_save_slots()
-            return True
+            return
 
         # Toggle Mode
         if self.mode_button.is_hovered:
@@ -100,8 +115,6 @@ class SaveSelector(Scene):
         if (pygame.K_ESCAPE in ev.key_down) or \
             self.return_button.is_hovered:
             self.sm.stack_pop()
-
-        return True
 
     def update(self, dt: float) -> None:
         for entry in self.slot_entries:
@@ -133,10 +146,6 @@ class SaveSelector(Scene):
     def reload_language_data(self) -> None:
         # It is impossible to change language in the scene
         pass
-
-    @property
-    def is_overlay(self) -> bool:
-        return True
 
     def _reload_save_slots(self) -> None:
         ensure_dir(userdata_dir("sav"))
