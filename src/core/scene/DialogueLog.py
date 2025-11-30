@@ -89,7 +89,7 @@ class DialogueLog(Scene):
         if not self._render_lines:
             return
 
-        padding = self.rscale(36)
+        padding = self.rscale(48)
         h = self._window_size[1]
         y = padding - int(self._scroll)  # y after scroll
 
@@ -128,7 +128,7 @@ class DialogueLog(Scene):
 
         padding = self.rscale(36)
         max_width = self._window_size[0] - padding * 2
-        self._line_gap_px = self.rscale(10)
+        self._line_gap_px = self.rscale(20)
 
         # Expand dialogues to multiple lines
         for speaker, text in self._lines:

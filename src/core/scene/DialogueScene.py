@@ -40,6 +40,8 @@ class DialogueScene(Scene):
         self._last_action_idx: int = -1
         self.dialogue_history: list[tuple[str, str]] = []  # For Log Overlay (Speaker, Dialogue)
 
+        self._is_speaker_exist: bool = False
+
         self._dropdown_menu_toggled: bool = False
 
         self._auto_mode: bool = False
@@ -49,6 +51,7 @@ class DialogueScene(Scene):
         self._hide_mode: bool = False
         self._skip_mode: bool = False
         self._awaiting_overlays: list[Type[Scene]] = []
+        self._bg_transition: dict[str, object] | None = None
 
         # UI Elements
         self.tw = Typewriter("", self.config_cps_scale)
@@ -135,6 +138,7 @@ class DialogueScene(Scene):
                     case "hide":
                         self._hide_mode = True
                     case "skip":
+                        self.dialogue_history.pop() # Prevent duplicated entry
                         self._skip_mode = True
                 return True
 
@@ -157,6 +161,8 @@ class DialogueScene(Scene):
     def update(self, dt: float) -> None:
         # Screen Shake Effect
         self.shake_controller.update(dt)
+
+        self._update_background_transition(dt)
 
         # Character Pos
         for k, v in self.characters["animator"].items():
@@ -217,7 +223,22 @@ class DialogueScene(Scene):
         s_x, s_y = self.shake_controller.get_offset()
 
         # Background
-        surface.blit(self.background, (s_x, s_y))
+        if self._bg_transition and self._bg_transition.get("type") == "fade":
+            duration = max(float(self._bg_transition.get("duration", 0.0)), 1e-6) # type: ignore
+            elapsed = float(self._bg_transition.get("elapsed", 0.0)) # type: ignore
+            progress = max(0.0, min(1.0, elapsed / duration))
+
+            from_bg = self._bg_transition.get("from")
+            to_bg = self._bg_transition.get("to")
+            if isinstance(from_bg, pygame.Surface):
+                surface.blit(from_bg, (s_x, s_y))
+            if isinstance(to_bg, pygame.Surface):
+                alpha = int(255 * progress)
+                to_bg.set_alpha(alpha)
+                surface.blit(to_bg, (s_x, s_y))
+                to_bg.set_alpha(None)
+        else:
+            surface.blit(self.background, (s_x, s_y)) # type: ignore
 
         # Character Sprites
         for k in self.characters["sprite"].keys():
@@ -250,15 +271,14 @@ class DialogueScene(Scene):
             surface.blit(self.down_arrow_surface, (w * 0.93, h * 0.9))
 
         # Dialogue
-        name_pos = (w * 0.07, h * 0.79)
+        name_pos = (w * 0.05, h * 0.79)
         ctitle_pos = (w * 0.08, h * 0.86)
-        dialogue_pos = (w * 0.2, h * 0.8)
 
         surface.blit(self.name_surface, name_pos)
         surface.blit(self.ctitle_surface, ctitle_pos)
 
         # Lines of Text
-        x, y = dialogue_pos
+        d_y = h * 0.8
         line_gap = self.rscale(4)
         padding_bottom = self.rscale(40)
 
@@ -266,18 +286,22 @@ class DialogueScene(Scene):
             line_h = line_surf.get_height()
 
             # Stop when it's out of screen
-            if y > h - padding_bottom:
+            if d_y > h - padding_bottom:
                 break
 
-            surface.blit(line_surf, (x, y))
-            y += line_h + line_gap
+            if self._is_speaker_exist:
+                surface.blit(line_surf, (w * 0.2, d_y))
+            else:
+                surface.blit(line_surf, (w * 0.15, d_y))
+            d_y += line_h + line_gap
 
-        slash_pos = (w * 0.17, h * 0.8)
-        line_length = self.rscale(120)
-        line_width = max(1, self.rscale(2))
-        start_pos = (slash_pos[0], slash_pos[1] + line_length)
-        end_pos = (slash_pos[0] + line_length * 0.4, slash_pos[1])
-        pygame.draw.line(surface, self.slash_color, start_pos, end_pos, line_width)
+        if self._is_speaker_exist:
+            slash_pos = (w * 0.17, h * 0.8)
+            line_length = self.rscale(120)
+            line_width = max(1, self.rscale(2))
+            start_pos = (slash_pos[0], slash_pos[1] + line_length)
+            end_pos = (slash_pos[0] + line_length * 0.4, slash_pos[1])
+            pygame.draw.line(surface, self.slash_color, start_pos, end_pos, line_width)
 
         # UI buttons
         for button in self.buttons:
@@ -331,24 +355,36 @@ class DialogueScene(Scene):
 
         self.dialogue_overlay = overlay
 
-    def _reload_background(self) -> None:
-        def get_last_background_filename() -> tuple[str, int] | tuple[None, None]:
-            for idx in reversed(range(self._curr_step_idx + 1)):
-                curr_step = self.dialogue_data["steps"][idx]
-                for action in reversed(curr_step["actions"]):
-                    if action["type"] != "set_background":
-                        continue
-                    return action["args"]["filename"], int(action["args"]["blur"])  # type: ignore
-            return (None, None)
+    def _find_latest_background(self) -> tuple[str | None, int]:
+        def find_in_step(step_idx: int, last_action_idx: int | None = None) -> tuple[str | None, int]:
+            curr_step = self.dialogue_data["steps"][step_idx]
+            max_idx = last_action_idx if last_action_idx is not None else len(curr_step["actions"]) - 1
+            if max_idx < 0:
+                return (None, 0)
 
-        filename, blur = get_last_background_filename()
+            for action in reversed(curr_step["actions"][:max_idx + 1]):
+                if action["type"] != "set_background":
+                    continue
+                args = action.get("args", {})
+                return args.get("filename"), int(args.get("blur", 0)) # type: ignore
+            return (None, 0)
 
+        for idx in reversed(range(self._curr_step_idx + 1)):
+            # Only consider actions that have already run in the current step
+            last_action_idx = self._curr_action_idx - 1 if idx == self._curr_step_idx else None
+            filename, blur = find_in_step(idx, last_action_idx)
+            if filename is not None:
+                return filename, blur
+
+        return (None, 0)
+
+    def _load_background_surface(self, filename: str | None, blur: int = 0) -> pygame.Surface:
         if filename is None:
-            self.background = pygame.Surface(self.windows_size)
-            self.background.fill((0, 0, 0))
-            return
+            background = pygame.Surface(self.windows_size)
+            background.fill((0, 0, 0))
+            return background
 
-        self.background = pygame.transform.smoothscale(
+        background = pygame.transform.smoothscale(
             pygame.image.load(
                 self.sm.get_illustration_iofile(filename)
             ).convert(),
@@ -356,7 +392,49 @@ class DialogueScene(Scene):
         )
 
         if blur:
-            self.background = pygame.transform.gaussian_blur(self.background, blur)
+            background = pygame.transform.gaussian_blur(background, blur)
+
+        return background
+
+    def _apply_background(self, filename: str | None, blur: int = 0, transition: dict | None = None) -> None:
+        new_background = self._load_background_surface(filename, blur)
+
+        if not transition or not isinstance(transition, dict):
+            self.background = new_background
+            self._bg_transition = None
+            return
+
+        transition_type = transition.get("type", "instant")
+        duration = float(transition.get("duration", 0.0))
+
+        if transition_type == "fade" and duration > 0 and hasattr(self, "background"):
+            self._bg_transition = {
+                "type": "fade",
+                "duration": duration,
+                "elapsed": 0.0,
+                "from": self.background,
+                "to": new_background
+            }
+        else:
+            self.background = new_background
+            self._bg_transition = None
+
+    def _reload_background(self) -> None:
+        filename, blur = self._find_latest_background()
+        self._apply_background(filename, blur)
+
+    def _update_background_transition(self, dt: float) -> None:
+        if not self._bg_transition:
+            return
+
+        duration = float(self._bg_transition.get("duration", 0.0)) # type: ignore
+        elapsed = float(self._bg_transition.get("elapsed", 0.0)) + max(dt, 0.0) # type: ignore
+        self._bg_transition["elapsed"] = elapsed
+
+        if duration <= 0 or elapsed >= duration:
+            # Finish transition and commit new background
+            self.background = self._bg_transition["to"]  # type: ignore
+            self._bg_transition = None
 
     def _reload_characters(self) -> None:
         self.characters = {
@@ -474,7 +552,8 @@ class DialogueScene(Scene):
                 self._skip_mode = False
                 return False  # Let next frame deal with it
 
-        self._skip_mode = False
+        # Skip until step ends
+        # self._skip_mode = False
         return True
 
     def _execute_action(self, action: DialogueActionData) -> None:
@@ -484,6 +563,8 @@ class DialogueScene(Scene):
             speaker_name = args["speaker_name"]
             speaker_title = args["speaker_title"]
             full_text = args["text"]
+
+            self._is_speaker_exist = bool(speaker_name or speaker_title)
 
             self.name_surface = self.name_font.render(speaker_name, True, self.text_color)  # type: ignore
             self.ctitle_surface = self.ctitle_font.render(speaker_title, True, self.text_color)  # type: ignore
@@ -589,7 +670,11 @@ class DialogueScene(Scene):
             case "show_text":
                 show_text()
             case "set_background":
-                self._reload_background()  # Automatically apply last background with curr_step_idx
+                self._apply_background(
+                    args.get("filename"), # type: ignore
+                    int(args.get("blur", 0)), # type: ignore
+                    args.get("transition") # type: ignore
+                )
             case "play_bgm":
                 pass
             case "play_sfx":
