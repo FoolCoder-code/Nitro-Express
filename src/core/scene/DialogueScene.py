@@ -165,7 +165,7 @@ class DialogueScene(Scene):
         # Get max width of text area
         w, h = self.windows_size
         dialogue_x = int(w * 0.2)
-        padding_right = self.rscale(60)
+        padding_right = self.rscale(140)
         max_width = w - dialogue_x - padding_right
 
         # Wrap
@@ -173,8 +173,7 @@ class DialogueScene(Scene):
 
         # Save as Surfaces
         self._dialogue_lines = [
-            self.dialogue_font.render(line, True, self.text_color)
-            for line in wrapped_lines
+            self.dialogue_font.render(line, True, self.text_color) for line in wrapped_lines
         ]
 
         # Auto Mode Dialogue Advance
@@ -228,6 +227,10 @@ class DialogueScene(Scene):
 
         # Dialogue Overlay
         surface.blit(self.dialogue_overlay, (0, h - self.dialogue_overlay.get_rect().height))
+
+        # Dialogue Down Arrow
+        if self.tw.is_finished:
+            surface.blit(self.down_arrow_surface, (w * 0.93, h * 0.9))
 
         # Dialogue
         name_pos = (w * 0.07, h * 0.79)
@@ -290,6 +293,7 @@ class DialogueScene(Scene):
         # Surfaces
         self.name_surface = self.name_font.render("", True, self.text_color)
         self.ctitle_surface = self.ctitle_font.render("", True, self.text_color)
+        self.down_arrow_surface = self.dialogue_font.render("﹀", True, self.text_color)
 
         self._reload_dialogue_overlay()
         self._reload_background()
@@ -522,11 +526,11 @@ class DialogueScene(Scene):
                 self.characters["is_highlighted"][character_id] = True
 
         def screen_shake(action: DialogueActionData) -> None:
-            # TODO: Implement
             duration = float(args["duration"]) # type: ignore
             intensity = float(args["intensity"]) # type: ignore
             freq = int(args["frequency"]) # type: ignore
-            self.shake_controller.start(duration, intensity, freq)
+            infinite = bool(args["infinite"])
+            self.shake_controller.start(duration, intensity, freq, infinite)
 
         def prompt(action: DialogueActionData) -> str:
             # TODO: Implement

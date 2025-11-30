@@ -8,16 +8,20 @@ class ScreenShake:
         self.timer = 0
         self.intensity = 0
         self.frequency = 0
+        self.infinite = False
         self.seed = random.random()
 
-    def start(self, duration: float, intensity: float, frequency: float = 35):
+    def start(self, duration: float, intensity: float, frequency: float = 35, infinite: bool = False):
         self.duration = duration
         self.timer = duration
         self.intensity = intensity
         self.frequency = frequency
+        self.infinite = infinite
         self.seed = random.random()
 
     def update(self, dt: float):
+        if self.infinite and self.timer <= 0:
+            self.timer = self.duration
         if self.timer <= 0:
             return
         self.timer -= dt
