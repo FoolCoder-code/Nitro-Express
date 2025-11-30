@@ -8,6 +8,7 @@ from core.scene.DialogueLog import DialogueLog
 from core.scene.DialogueStructure import DialogueSceneData, DialogueActionData
 from core.ui.components.AnimatedGlowingButton import AnimatedGlowingButton
 from core.ui.effects.CoordsAnimator import Linear, OutCubic, InCubic, OutBack, InBack, Elastic
+from core.ui.effects.ScreenShake import ScreenShake
 from core.ui.effects.Typewriter import Typewriter
 
 
@@ -40,6 +41,7 @@ class DialogueScene(Scene):
 
         # UI Elements
         self.tw = Typewriter("", self.config_cps_scale)
+        self.shake_controller = ScreenShake()
         self._dialogue_lines: list[pygame.Surface] = []  # Wrapped dialogue lines (each is a rendered Surface)
 
         self.characters = {
@@ -144,6 +146,9 @@ class DialogueScene(Scene):
         return self.is_overlay
 
     def update(self, dt: float) -> None:
+        # Screen Shake Effect
+        self.shake_controller.update(dt)
+
         # Character Pos
         for k, v in self.characters["animator"].items():
             if v is None:
@@ -193,9 +198,10 @@ class DialogueScene(Scene):
 
     def draw(self, surface: pygame.Surface) -> None:
         w, h = self.windows_size
+        s_x, s_y = self.shake_controller.get_offset()
 
         # Background
-        surface.blit(self.background)
+        surface.blit(self.background, (s_x, s_y))
 
         # Character Sprites
         for k in self.characters["sprite"].keys():
@@ -205,7 +211,7 @@ class DialogueScene(Scene):
             c_w, c_h = c_rect.width, c_rect.height
             pos = self.characters["pos"][k]
 
-            c_pos = (pos[0] - c_w // 2, pos[1] - c_h // 2)
+            c_pos = (pos[0] - c_w // 2 + s_x, pos[1] - c_h // 2 + s_y)
             surface.blit(self.characters["sprite"][k], c_pos)
 
             # Highlight effect (Dim others)
@@ -517,8 +523,10 @@ class DialogueScene(Scene):
 
         def screen_shake(action: DialogueActionData) -> None:
             # TODO: Implement
-            duration = float(args["duration"])  # type: ignore
-            intensity = float(args["intensity"])  # type: ignore
+            duration = float(args["duration"]) # type: ignore
+            intensity = float(args["intensity"]) # type: ignore
+            freq = int(args["frequency"]) # type: ignore
+            self.shake_controller.start(duration, intensity, freq)
 
         def prompt(action: DialogueActionData) -> str:
             # TODO: Implement
