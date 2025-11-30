@@ -31,5 +31,13 @@
         "toggle_overwrite": "Overwrite Mode",
         "toggle_remove": "Remove Mode",
         "return": "Return to Game"
+    },
+
+    "dialogueScene": {
+        "button_log": "Log",
+        "button_auto": "Auto",
+        "button_more": "More",
+        "button_hide": "Hide",
+        "button_skip": "Skip"
     }
 }

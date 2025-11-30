@@ -9,6 +9,7 @@ from core.config_manager import DEFAULT_LANGUAGE_CODE, get_config_parser
 from core.locale.pak_loader import LangData
 from core.scene.Scene import Scene
 from core.scene.EventState import EventState
+from core.scene.DialogueStructure import DialogueSceneData
 
 
 class SceneManager:
@@ -45,6 +46,9 @@ class SceneManager:
 
     def get_sprite_iofile(self, filename_no_ext: str) -> io.BytesIO:
         return io.BytesIO(unpack_encoded_string(self.asset_sprites["entries"][filename_no_ext]["encoded_string"]))
+
+    def get_scene_data(self, filename_no_ext: str) -> DialogueSceneData:
+        return json.loads(unpack_encoded_string(self.asset_scenes["entries"][filename_no_ext]["encoded_string"]))
 
     def reload_language_data(self) -> None:
         """

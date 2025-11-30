@@ -31,5 +31,13 @@
         "toggle_overwrite": "覆蓋模式",
         "toggle_remove": "刪除模式",
         "return": "返回遊戲"
+    },
+
+    "dialogueScene": {
+        "button_log": "紀錄",
+        "button_auto": "自動",
+        "button_more": "其他",
+        "button_hide": "隱藏",
+        "button_skip": "跳過"
     }
 }
